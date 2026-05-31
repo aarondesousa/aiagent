@@ -7,7 +7,7 @@ from google import genai
 from google.genai import types
 
 from call_function import available_functions, call_function
-from config import MAX_ITERS
+from config import MAX_ITERS, MODEL_NAME
 from prompts import system_prompt
 
 
@@ -49,7 +49,7 @@ def generate_content(
     client: genai.Client, messages: list[types.Content], verbose: bool
 ) -> str | None:
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model=MODEL_NAME,
         contents=messages,
         config=types.GenerateContentConfig(
             tools=[available_functions], system_instruction=system_prompt
@@ -70,7 +70,6 @@ def generate_content(
     if not response.function_calls:
         return response.text
 
-    function_responses: list[types.Part] = []
     for function_call in response.function_calls:
         result = call_function(function_call, verbose)
         if (
@@ -81,9 +80,10 @@ def generate_content(
             raise RuntimeError(f"Empty function response for {function_call.name}")
         if verbose:
             print(f"-> {result.parts[0].function_response.response}")
-        function_responses.append(result.parts[0])
 
-    messages.append(types.Content(role="user", parts=function_responses))
+        messages.append(result)
+
+    return None
 
 
 if __name__ == "__main__":
