@@ -70,6 +70,7 @@ def generate_content(
     if not response.function_calls:
         return response.text
 
+    function_responses: list[types.Part] = []
     for function_call in response.function_calls:
         result = call_function(function_call, verbose)
         if (
@@ -80,9 +81,9 @@ def generate_content(
             raise RuntimeError(f"Empty function response for {function_call.name}")
         if verbose:
             print(f"-> {result.parts[0].function_response.response}")
+        function_responses.append(result.parts[0])
 
-        messages.append(result)
-
+    messages.append(types.Content(role="user", parts=function_responses))
     return None
 
 
